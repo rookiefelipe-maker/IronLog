@@ -94,6 +94,13 @@ html,body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-ser
 .edit-cancel-btn{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border2);background:transparent;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;color:var(--muted2);cursor:pointer}
 .edit-cancel-btn:active{background:var(--bg4)}
 
+/* BACKOFF SETS */
+.backoffs{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)}
+.backoff-label{font-size:9px;letter-spacing:2px;color:var(--gray);text-transform:uppercase;margin-bottom:4px;font-family:'Bebas Neue',sans-serif}
+.backoff-row{display:flex;align-items:baseline;gap:3px}
+.backoff-weight{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:var(--muted);line-height:1}
+.backoff-unit{font-size:10px;color:var(--muted2)}
+
 /* 3 BUTTONS ROW */
 .ex-btns{display:flex;gap:6px;align-items:center}
 
@@ -435,12 +442,12 @@ function buildDays(w){
 
   return [
     { id:'A', label:'DAY A', date:dateAt(0), exercises:[
-      {name:'Squat', weight:wt(sq), reps:'5 reps', base:'squat'},
+      {name:'Squat', weight:wt(sq), reps:'5 reps', base:'squat', backoff: wt(sq-20)},
       {name:'Technical Bench', weight:wt(bn-10), reps:'5 reps', base:null}
     ]},
     { id:'B', label:'DAY B', date:dateAt(1), exercises:[
-      {name:'Deadlift', weight:wt(dl), reps:'5 reps', base:'dl'},
-      {name:'Bench', weight:wt(bn), reps:'5 reps', base:'bench'}
+      {name:'Deadlift', weight:wt(dl), reps:'5 reps', base:'dl', backoff: wt(dl-20)},
+      {name:'Bench', weight:wt(bn), reps:'5 reps', base:'bench', backoff: wt(bn-10)}
     ]},
     { id:'R1', rest:true, date:dateAt(2) },
     { id:'C', label:'DAY C', date:dateAt(3), exercises:[
@@ -687,6 +694,16 @@ function render(){
         </div>
       `;
 
+      const backoffHTML = ex.backoff != null ? `
+        <div class="backoffs">
+          <div class="backoff-label">Backoff · 3 × 8 reps</div>
+          <div class="backoff-row">
+            <span class="backoff-weight">${displayWeight - (ex.weight - ex.backoff)}</span>
+            <span class="backoff-unit">kg</span>
+          </div>
+        </div>
+      ` : '';
+
       return `
         <div class="exercise">
           <div class="ex-top">
@@ -701,6 +718,7 @@ function render(){
           </div>
           <div class="ex-reps">${ex.reps}</div>
           ${rpeHTML}
+          ${backoffHTML}
         </div>
       `;
     }).join('');
