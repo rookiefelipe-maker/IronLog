@@ -146,6 +146,8 @@ html,body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-ser
 .s-btn-export:active{background:var(--bg4);border-color:var(--gray)}
 .s-btn-import{color:var(--amber)}
 .s-btn-import:active{background:var(--amber-bg);border-color:var(--amber)}
+.s-btn-reset{color:#ff6b6b;border-color:#7a1a16;margin-top:4px}
+.s-btn-reset:active{background:var(--red-bg);border-color:var(--red)}
 .s-btn-close{color:var(--muted);margin-top:4px}
 .s-btn-close:active{background:var(--bg4)}
 </style>
@@ -189,6 +191,10 @@ if('serviceWorker' in navigator){
         IMPORTAR BACKUP
       </button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)"/>
+      <button class="s-btn s-btn-reset" onclick="resetApp()">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
+        RESET — BORRAR TODO
+      </button>
       <button class="s-btn s-btn-close" onclick="closeSettings()">CERRAR</button>
     </div>
   </div>
@@ -226,12 +232,19 @@ let state = JSON.parse(localStorage.getItem('ironlog_v3') || 'null') || {
   currentWeek: 5,
   bases: { squat: 150, bench: 100, dl: 150 },
   variants: { pauseSquat: 125, lightBench: 80, pauseDL: 130, cg: 80, larssen: 80 },
-  checks: {},      // 'exKey_w5_A_squat': true
-  rpeLog: {},      // 'squat_w5': 'easy'|'heavy'
-  pendingRaise: {} // 'squat': weekNumberWhenRaiseApplies
+  checks: {},        // 'exKey_w5_A_squat': true
+  savedWeights: {},  // 'exKey_w5_A_squat': 150 — frozen at check time
+  rpeLog: {},        // 'squat_w5': 'easy'|'heavy'
+  pendingRaise: {}   // 'squat': weekNumberWhenRaiseApplies
 };
 
 function save(){ localStorage.setItem('ironlog_v3', JSON.stringify(state)) }
+
+// ── MIGRATION GUARD ────────────────────────────
+// Ensure all keys exist even if loading older saves
+if(!state.savedWeights) state.savedWeights = {};
+if(!state.rpeLog) state.rpeLog = {};
+if(!state.pendingRaise) state.pendingRaise = {};
 
 // ── FORMULAS ───────────────────────────────────
 function epley(w,r){ return Math.round(w*(1+r/30)) }
@@ -335,8 +348,16 @@ function buildDays(w){
 }
 
 // ── ACTIONS ────────────────────────────────────
-function toggleExCheck(key){
-  state.checks[key] = !state.checks[key];
+function toggleExCheck(key, weight){
+  if(state.checks[key]){
+    // uncheck — remove saved weight
+    delete state.checks[key];
+    delete state.savedWeights[key];
+  } else {
+    // check — freeze current weight
+    state.checks[key] = true;
+    state.savedWeights[key] = weight;
+  }
   save(); render();
   showToast(state.checks[key]?'✓ HECHO':'DESMARCADO', state.checks[key]?'green':'');
 }
@@ -427,6 +448,10 @@ function render(){
     const exHTML = day.exercises.map(ex=>{
       const checkKey=`ex_w${w}_${day.id}_${ex.name.replace(/\s/g,'_')}`;
       const checked = !!state.checks[checkKey];
+      // Use frozen weight if checked, else live weight
+      const displayWeight = checked && state.savedWeights[checkKey] !== undefined
+        ? state.savedWeights[checkKey]
+        : ex.weight;
       const rpeKey = ex.base ? `${ex.base}_w${w}` : null;
       const rpeVal = rpeKey ? (state.rpeLog[rpeKey]||null) : null;
       const streak = ex.base ? getStreak(ex.base, w) : 0;
@@ -446,7 +471,7 @@ function render(){
 
       const rpeHTML = ex.base ? `
         <div class="ex-btns">
-          <button class="ex-check${checked?' checked':''}" onclick="toggleExCheck('${checkKey}')">
+          <button class="ex-check${checked?' checked':''}" onclick="toggleExCheck('${checkKey}',${ex.weight})">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
           <button class="rpe-btn easy-btn${rpeVal==='easy'?' active':''}" onclick="setRPE('${ex.base}',${w},'easy')">
@@ -459,7 +484,7 @@ function render(){
         ${streakHTML}
       ` : `
         <div class="ex-btns">
-          <button class="ex-check${checked?' checked':''}" onclick="toggleExCheck('${checkKey}')">
+          <button class="ex-check${checked?' checked':''}" onclick="toggleExCheck('${checkKey}',${ex.weight})">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
         </div>
@@ -469,7 +494,7 @@ function render(){
         <div class="exercise">
           <div class="ex-top">
             <div class="ex-name">${ex.name}</div>
-            <div class="ex-right"><div class="ex-weight">${ex.weight}</div><div class="ex-unit">kg</div></div>
+            <div class="ex-right"><div class="ex-weight">${displayWeight}</div><div class="ex-unit">kg</div></div>
           </div>
           <div class="ex-reps">${ex.reps}</div>
           ${rpeHTML}
@@ -510,6 +535,25 @@ function render(){
   }).join('');
 }
 
+
+// ── RESET ──────────────────────────────────────
+function resetApp(){
+  if(!confirm('¿Seguro? Esto borra TODA la info: pesos, checks, streaks. No se puede deshacer.')) return;
+  localStorage.removeItem('ironlog_v3');
+  state = {
+    currentWeek: 5,
+    bases: { squat: 150, bench: 100, dl: 150 },
+    variants: { pauseSquat: 125, lightBench: 80, pauseDL: 130, cg: 80, larssen: 80 },
+    checks: {},
+    savedWeights: {},
+    rpeLog: {},
+    pendingRaise: {}
+  };
+  save();
+  closeSettings();
+  render();
+  showToast('APP RESETEADA', 'red');
+}
 
 // ── BACKUP / RESTORE ───────────────────────────
 function openSettings(){ document.getElementById('settingsOverlay').classList.add('open') }
