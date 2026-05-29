@@ -175,6 +175,28 @@ html,body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-ser
 .s-btn-reset:active{background:var(--red-bg);border-color:var(--red)}
 .s-btn-close{color:var(--muted);margin-top:4px}
 .s-btn-close:active{background:var(--bg4)}
+
+/* SET WEEK BASES PANEL */
+.bases-overlay{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center}
+.bases-overlay.open{display:flex}
+.bases-panel{background:var(--bg2);border:1px solid var(--border2);border-radius:16px 16px 0 0;padding:24px 20px 36px;width:100%;max-width:480px}
+.bases-panel-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--white);margin-bottom:4px}
+.bases-panel-sub{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.bases-inputs{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+.bases-input-row{display:flex;align-items:center;gap:10px}
+.bases-input-label{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;color:var(--muted);width:72px;flex-shrink:0}
+.bases-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--white);text-align:center;outline:none;-webkit-appearance:none}
+.bases-input:focus{border-color:var(--amber)}
+.bases-input-unit{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--muted2);width:24px}
+.bases-actions{display:flex;flex-direction:column;gap:8px}
+.bases-save-btn{width:100%;padding:14px;border-radius:10px;border:none;background:var(--amber);font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:#000;cursor:pointer}
+.bases-save-btn:active{opacity:.85}
+.bases-reset-btn{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border2);background:transparent;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;color:var(--muted);cursor:pointer}
+.bases-reset-btn:active{background:var(--bg4)}
+.bases-cancel-btn{width:100%;padding:12px;border-radius:10px;border:1px solid var(--border2);background:transparent;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;color:var(--muted2);cursor:pointer}
+.bases-cancel-btn:active{background:var(--bg4)}
+/* indicator on day-header that week has custom bases */
+.week-bases-badge{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;padding:2px 7px;border-radius:4px;background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);cursor:pointer}
 </style>
 
 <script>
@@ -242,6 +264,36 @@ if('serviceWorker' in navigator){
   </div>
 </div>
 
+<!-- SET WEEK BASES PANEL -->
+<div class="bases-overlay" id="basesOverlay">
+  <div class="bases-panel">
+    <div class="bases-panel-title" id="basesPanelTitle">SET BASES</div>
+    <div class="bases-panel-sub">Override the SBD top-set weights for this week. Variants (Pause Squat, Light Bench, etc.) will recalculate automatically.</div>
+    <div class="bases-inputs">
+      <div class="bases-input-row">
+        <span class="bases-input-label">SQUAT</span>
+        <input class="bases-input" type="number" id="basesInputSquat" step="2.5" min="0"/>
+        <span class="bases-input-unit">KG</span>
+      </div>
+      <div class="bases-input-row">
+        <span class="bases-input-label">BENCH</span>
+        <input class="bases-input" type="number" id="basesInputBench" step="2.5" min="0"/>
+        <span class="bases-input-unit">KG</span>
+      </div>
+      <div class="bases-input-row">
+        <span class="bases-input-label">DEADLIFT</span>
+        <input class="bases-input" type="number" id="basesInputDL" step="2.5" min="0"/>
+        <span class="bases-input-unit">KG</span>
+      </div>
+    </div>
+    <div class="bases-actions">
+      <button class="bases-save-btn" onclick="saveWeekBases()">APPLY TO THIS WEEK</button>
+      <button class="bases-reset-btn" onclick="resetWeekBases()">RESET TO CURRENT BASES</button>
+      <button class="bases-cancel-btn" onclick="closeWeekBases()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <div class="week-meta">
   <div class="badge badge-red" id="weekBadge">WEEK 5</div>
   <div class="badge badge-deload" id="deloadBadge">DELOAD</div>
@@ -275,7 +327,8 @@ let state = JSON.parse(localStorage.getItem('ironlog_v3') || 'null') || {
   savedWeights: {},
   rpeLog: {},
   pendingRaise: {},
-  overrideWeights: {}   // 'checkKey': overridden_kg — manual weight overrides per exercise/week
+  overrideWeights: {},  // 'checkKey': overridden_kg — manual weight overrides per exercise/week
+  weekBases: {}         // 'w3': {squat,bench,dl} — per-week SBD base overrides
 };
 
 function save(){ localStorage.setItem('ironlog_v3', JSON.stringify(state)) }
@@ -285,6 +338,7 @@ if(!state.savedWeights) state.savedWeights = {};
 if(!state.rpeLog) state.rpeLog = {};
 if(!state.pendingRaise) state.pendingRaise = {};
 if(!state.overrideWeights) state.overrideWeights = {};
+if(!state.weekBases) state.weekBases = {};
 
 // ── FORMULAS ───────────────────────────────────
 function epley(w,r){ return Math.round(w*(1+r/30)) }
@@ -348,12 +402,33 @@ function recalcVariants(base){
 }
 
 // ── GET WEIGHTS FOR WEEK ───────────────────────
+function getWeekBases(w){
+  // Use per-week override if set, otherwise global bases
+  const wb = state.weekBases[`w${w}`];
+  if(wb) return { sq: wb.squat, bn: wb.bench, dl: wb.dl };
+  return { sq: state.bases.squat, bn: state.bases.bench, dl: state.bases.dl };
+}
+
+function getWeekVariants(w){
+  // Compute variants from whichever bases apply for this week
+  const {sq, bn, dl} = getWeekBases(w);
+  const bnRM = epley(bn, 5);
+  return {
+    pauseSquat: pct70(epley(sq, 5)),
+    lightBench: pct70(bnRM),
+    cg:         pct70(bnRM),
+    larssen:    pct70(bnRM),
+    pauseDL:    pct70(epley(dl, 5))
+  };
+}
+
 function buildDays(w){
   const isDeload = DELOAD_WEEKS.includes(w);
   const useLarssen = (w%2!==0);
   const monday = weekMonday(w);
 
-  const sq=state.bases.squat, bn=state.bases.bench, dl=state.bases.dl;
+  const {sq, bn, dl} = getWeekBases(w);
+  const v = getWeekVariants(w);
   const f = isDeload ? 0.75 : 1;
   function wt(kg){ return Math.round(kg*f/2.5)*2.5 }
   function dateAt(off){ const d=new Date(monday); d.setDate(d.getDate()+off); return d }
@@ -369,12 +444,12 @@ function buildDays(w){
     ]},
     { id:'R1', rest:true, date:dateAt(2) },
     { id:'C', label:'DAY C', date:dateAt(3), exercises:[
-      {name:'Pause Squat', weight:wt(state.variants.pauseSquat), reps:'8–12 reps', base:null},
-      {name:'Light Bench', weight:wt(state.variants.lightBench), reps:'8–12 reps', base:null}
+      {name:'Pause Squat', weight:wt(v.pauseSquat), reps:'8–12 reps', base:null},
+      {name:'Light Bench', weight:wt(v.lightBench), reps:'8–12 reps', base:null}
     ]},
     { id:'D', label:'DAY D', date:dateAt(4), exercises:[
-      {name:'Pause Deadlift', weight:wt(state.variants.pauseDL), reps:'8–12 reps', base:null},
-      {name:useLarssen?'Larssen Press':'Close-grip', weight:wt(useLarssen?state.variants.larssen:state.variants.cg), reps:'8–12 reps', base:null}
+      {name:'Pause Deadlift', weight:wt(v.pauseDL), reps:'8–12 reps', base:null},
+      {name:useLarssen?'Larssen Press':'Close-grip', weight:wt(useLarssen?v.larssen:v.cg), reps:'8–12 reps', base:null}
     ]}
   ];
 }
@@ -420,6 +495,48 @@ function setRPE(base, week, val){
 function changeWeek(dir){
   state.currentWeek = Math.max(1,Math.min(32,state.currentWeek+dir));
   save(); render();
+}
+
+// ── SET WEEK BASES ─────────────────────────────
+let _basesWeek = null;
+
+function openWeekBases(w){
+  _basesWeek = w;
+  document.getElementById('basesPanelTitle').textContent = `WEEK ${w} — SET BASES`;
+  const wb = state.weekBases[`w${w}`];
+  document.getElementById('basesInputSquat').value = wb ? wb.squat : state.bases.squat;
+  document.getElementById('basesInputBench').value  = wb ? wb.bench : state.bases.bench;
+  document.getElementById('basesInputDL').value     = wb ? wb.dl    : state.bases.dl;
+  document.getElementById('basesOverlay').classList.add('open');
+}
+
+function saveWeekBases(){
+  const sq = parseFloat(document.getElementById('basesInputSquat').value);
+  const bn = parseFloat(document.getElementById('basesInputBench').value);
+  const dl = parseFloat(document.getElementById('basesInputDL').value);
+  if([sq,bn,dl].some(v=>isNaN(v)||v<=0)){ showToast('INVALID VALUES','red'); return; }
+  state.weekBases[`w${_basesWeek}`] = {
+    squat: Math.round(sq/2.5)*2.5,
+    bench: Math.round(bn/2.5)*2.5,
+    dl:    Math.round(dl/2.5)*2.5
+  };
+  save();
+  closeWeekBases();
+  render();
+  showToast(`WEEK ${_basesWeek} BASES SET`, 'amber');
+}
+
+function resetWeekBases(){
+  delete state.weekBases[`w${_basesWeek}`];
+  save();
+  closeWeekBases();
+  render();
+  showToast('RESET TO CURRENT BASES', '');
+}
+
+function closeWeekBases(){
+  document.getElementById('basesOverlay').classList.remove('open');
+  _basesWeek = null;
 }
 
 // ── EDIT WEIGHT ────────────────────────────────
@@ -591,18 +708,19 @@ function render(){
     card.innerHTML=`
       <div class="day-header">
         <div><div class="day-date-label">${fmtFull(day.date)}</div><div class="day-type">${day.label}</div></div>
+        <button class="week-bases-badge" onclick="openWeekBases(${w})">${state.weekBases[`w${w}`] ? '✎ BASES' : '+ SET BASES'}</button>
       </div>
       <div class="exercises">${exHTML}</div>
     `;
     main.appendChild(card);
   });
 
-  // 1RM grid
-  const sq=state.bases.squat, bn=state.bases.bench, dl=state.bases.dl;
+  // 1RM grid — use week-specific bases if set
+  const {sq: rsq, bn: rbn, dl: rdl} = getWeekBases(w);
   const bases=[
-    {name:'Squat',base:'squat',val:sq},
-    {name:'Bench',base:'bench',val:bn},
-    {name:'Deadlift',base:'dl',val:dl}
+    {name:'Squat',base:'squat',val:rsq},
+    {name:'Bench',base:'bench',val:rbn},
+    {name:'Deadlift',base:'dl',val:rdl}
   ];
   document.getElementById('rmGrid').innerHTML=bases.map(b=>{
     const streak=getStreak(b.base,w);
@@ -634,7 +752,8 @@ function resetApp(){
     savedWeights: {},
     rpeLog: {},
     pendingRaise: {},
-    overrideWeights: {}
+    overrideWeights: {},
+    weekBases: {}
   };
   save();
   closeSettings();
@@ -672,6 +791,7 @@ function importBackup(event){
         showToast('INVALID FILE', 'red'); return;
       }
       if(!imported.overrideWeights) imported.overrideWeights = {};
+      if(!imported.weekBases) imported.weekBases = {};
       state = imported;
       save();
       closeSettings();
@@ -687,6 +807,10 @@ function importBackup(event){
 
 document.getElementById('settingsOverlay').addEventListener('click', function(e){
   if(e.target === this) closeSettings();
+});
+
+document.getElementById('basesOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeWeekBases();
 });
 
 document.getElementById('editOverlay').addEventListener('click', function(e){
