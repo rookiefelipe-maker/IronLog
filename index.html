@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>IRONLOG</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a0a;--bg2:#111111;--bg3:#181818;--bg4:#1f1f1f;
+  --border:#252525;--border2:#2e2e2e;
+  --red:#e63329;--red-dim:#7a1a16;--red-bg:rgba(230,51,41,.1);
+  --green:#22c55e;--green-dim:#14532d;--green-bg:rgba(34,197,94,.1);
+  --amber:#f59e0b;--amber-bg:rgba(245,158,11,.08);
+  --gray:#555;--gray2:#3a3a3a;
+  --white:#f0ede8;--muted:#888;--muted2:#666;
+}
+html,body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* HEADER */
+.header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--red);display:flex;align-items:center;gap:8px}
+.logo-dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-bottom:2px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.week-nav{display:flex;align-items:center;gap:8px}
+.nav-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--muted);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none}
+.nav-btn:active{background:var(--bg4);color:var(--red);border-color:var(--red-dim)}
+.week-label{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;min-width:72px;text-align:center;color:var(--white)}
+
+/* WEEK META */
+.week-meta{padding:10px 16px;display:flex;align-items:center;gap:8px;background:var(--bg);border-bottom:1px solid var(--border)}
+.badge{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1.5px;padding:3px 9px;border-radius:4px}
+.badge-red{background:var(--red);color:#fff}
+.badge-deload{background:var(--bg3);border:1px solid var(--gray2);color:var(--muted);display:none}
+.badge-current{background:transparent;border:1px solid var(--red-dim);color:var(--red)}
+.week-dates{font-size:12px;color:var(--muted);margin-left:auto}
+
+/* MAIN */
+.main{padding:14px 16px 110px}
+
+/* DAY CARD */
+.day-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;transition:border-color .2s}
+.day-card.rest-card{padding:16px;display:flex;align-items:center;gap:12px;opacity:.35}
+.rest-slashes{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--gray2)}
+.rest-label{font-size:12px;color:var(--muted2);letter-spacing:2px;font-family:'Bebas Neue',sans-serif}
+.rest-date{font-size:11px;color:var(--gray);margin-top:1px}
+
+.day-header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.day-date-label{font-size:11px;color:var(--muted2);letter-spacing:.5px;margin-bottom:2px}
+.day-type{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--red)}
+.deload-dim .day-type{color:var(--muted2)}
+
+/* EXERCISE */
+.exercises{padding:4px 14px 12px}
+.exercise{padding:10px 0 8px;border-bottom:1px solid var(--border)}
+.exercise:last-child{border-bottom:none;padding-bottom:0}
+.ex-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.ex-name{font-size:13px;color:var(--muted);font-weight:400;letter-spacing:.3px}
+.ex-right{display:flex;align-items:baseline;gap:3px}
+.ex-weight{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--white);line-height:1}
+.ex-unit{font-size:11px;color:var(--muted2)}
+.ex-reps{font-size:11px;color:var(--muted2);margin-bottom:8px;letter-spacing:.3px}
+
+/* 3 BUTTONS ROW */
+.ex-btns{display:flex;gap:6px;align-items:center}
+
+/* CHECK button per exercise */
+.ex-check{width:30px;height:30px;border-radius:50%;border:2px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.ex-check:active{transform:scale(.88)}
+.ex-check.checked{background:var(--green);border-color:var(--green)}
+.ex-check svg{width:13px;height:13px;stroke:#fff;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .2s}
+.ex-check.checked svg{opacity:1}
+
+/* EASY / HEAVY buttons */
+.rpe-btn{flex:1;padding:7px 6px;border-radius:8px;border:1px solid var(--border2);background:transparent;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px}
+.rpe-btn:active{transform:scale(.95)}
+
+.easy-btn{color:var(--green);border-color:var(--green-dim)}
+.easy-btn.active{background:var(--green-bg);border-color:var(--green)}
+.easy-btn:active{background:var(--green-bg)}
+
+.heavy-btn{color:var(--red);border-color:var(--red-dim)}
+.heavy-btn.active{background:var(--red-bg);border-color:var(--red)}
+.heavy-btn:active{background:var(--red-bg)}
+
+/* STREAK indicator */
+.streak-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.streak-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:background .2s}
+.streak-dot.filled{background:var(--green)}
+.streak-label{font-size:10px;color:var(--muted2);letter-spacing:.5px}
+.streak-label.ready{color:var(--amber);font-weight:500}
+
+/* AUTO-RAISE BADGE */
+.raise-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--amber-bg);border:1px solid var(--amber);
+  color:var(--amber);font-family:'Bebas Neue',sans-serif;
+  font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:6px;
+  margin-top:6px;
+}
+
+/* 1RM FOOTER */
+.rm-section{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--bg);border-top:1px solid var(--border);padding:10px 16px 14px}
+.rm-title{font-size:9px;letter-spacing:2px;color:var(--gray);text-transform:uppercase;margin-bottom:8px}
+.rm-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.rm-card{background:var(--bg3);border-radius:8px;padding:8px 10px}
+.rm-name{font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.rm-val{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--white);line-height:1}
+.rm-sub{font-size:9px;color:var(--gray);margin-top:2px}
+.rm-streak{font-size:9px;color:var(--green);margin-top:1px;letter-spacing:.5px}
+
+/* TOAST */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg3);border:1px solid var(--border2);color:var(--white);font-size:12px;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;padding:10px 18px;border-radius:8px;opacity:0;transition:all .25s;pointer-events:none;z-index:99;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.green{border-color:var(--green);color:var(--green)}
+.toast.red{border-color:var(--red);color:var(--red)}
+.toast.amber{border-color:var(--amber);color:var(--amber)}
+
+/* DELOAD BANNER */
+.deload-banner{background:linear-gradient(135deg,var(--bg3),var(--bg2));border:1px solid var(--gray2);border-radius:12px;padding:16px;margin-bottom:12px;text-align:center}
+.deload-banner-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--muted);margin-bottom:4px}
+.deload-banner-sub{font-size:12px;color:var(--gray);letter-spacing:.5px}
+
+/* SETTINGS PANEL */
+.settings-btn{width:34px;height:34px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.settings-btn:active{color:var(--white);border-color:var(--gray)}
+.settings-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.settings-overlay{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center}
+.settings-overlay.open{display:flex}
+.settings-panel{background:var(--bg2);border:1px solid var(--border2);border-radius:16px 16px 0 0;padding:24px 20px 36px;width:100%;max-width:480px}
+.settings-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--white);margin-bottom:4px}
+.settings-sub{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.settings-actions{display:flex;flex-direction:column;gap:10px}
+.s-btn{width:100%;padding:14px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.s-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.s-btn-export{color:var(--white)}
+.s-btn-export:active{background:var(--bg4);border-color:var(--gray)}
+.s-btn-import{color:var(--amber)}
+.s-btn-import:active{background:var(--amber-bg);border-color:var(--amber)}
+.s-btn-close{color:var(--muted);margin-top:4px}
+.s-btn-close:active{background:var(--bg4)}
+</style>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+</script>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><div class="logo-dot"></div>IRONLOG</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="settings-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div class="week-nav">
+      <button class="nav-btn" onclick="changeWeek(-1)">&#8249;</button>
+      <div class="week-label" id="weekLabel">SEM 5</div>
+      <button class="nav-btn" onclick="changeWeek(1)">&#8250;</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-panel">
+    <div class="settings-title">BACKUP &amp; RESTORE</div>
+    <div class="settings-sub">Exporta tu progreso como JSON antes de actualizar la app. Importalo despues para recuperar todo.</div>
+    <div class="settings-actions">
+      <button class="s-btn s-btn-export" onclick="exportBackup()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        EXPORTAR BACKUP .JSON
+      </button>
+      <button class="s-btn s-btn-import" onclick="document.getElementById('importFile').click()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        IMPORTAR BACKUP
+      </button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)"/>
+      <button class="s-btn s-btn-close" onclick="closeSettings()">CERRAR</button>
+    </div>
+  </div>
+</div>
+
+<div class="week-meta">
+  <div class="badge badge-red" id="weekBadge">SEMANA 5</div>
+  <div class="badge badge-deload" id="deloadBadge">DELOAD</div>
+  <div class="badge badge-current" id="currentBadge" style="display:none">HOY</div>
+  <div class="week-dates" id="weekDates"></div>
+</div>
+
+<div class="main" id="main"></div>
+
+<div class="rm-section">
+  <div class="rm-title">1RM estimado · Epley</div>
+  <div class="rm-grid" id="rmGrid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────
+const DELOAD_WEEKS = [8,15,22,29];
+const WEEK1_MONDAY = new Date(2026,4,4); // 4 mayo 2026
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DAYS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const BASE_NAMES = {squat:'SQUAT', bench:'BENCH', dl:'DEADLIFT'};
+
+// ── STATE ──────────────────────────────────────
+// rpeLog: { 'squat_w5': 'easy'|'heavy', ... }
+// bases: current topset weights
+// pendingRaise: { base, fromWeek } — when 2 consecutive easys detected, raise takes effect next week
+let state = JSON.parse(localStorage.getItem('ironlog_v3') || 'null') || {
+  currentWeek: 5,
+  bases: { squat: 150, bench: 100, dl: 150 },
+  variants: { pauseSquat: 125, lightBench: 80, pauseDL: 130, cg: 80, larssen: 80 },
+  checks: {},      // 'exKey_w5_A_squat': true
+  rpeLog: {},      // 'squat_w5': 'easy'|'heavy'
+  pendingRaise: {} // 'squat': weekNumberWhenRaiseApplies
+};
+
+function save(){ localStorage.setItem('ironlog_v3', JSON.stringify(state)) }
+
+// ── FORMULAS ───────────────────────────────────
+function epley(w,r){ return Math.round(w*(1+r/30)) }
+function pct70(rm){ return Math.round(rm*0.70/2.5)*2.5 }
+
+// ── DATES ──────────────────────────────────────
+function weekMonday(w){ const d=new Date(WEEK1_MONDAY); d.setDate(d.getDate()+(w-1)*7); return d }
+function fmt(d){ return `${d.getDate()} ${MONTHS[d.getMonth()]}` }
+function fmtFull(d){ return `${DAYS_ES[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}` }
+function isCurrentWeek(w){
+  const mon=weekMonday(w), fri=new Date(mon);
+  fri.setDate(fri.getDate()+4);
+  const today=new Date(); today.setHours(0,0,0,0);
+  return today>=mon && today<=fri;
+}
+
+// ── STREAK LOGIC ───────────────────────────────
+// Returns number of consecutive easy weeks ending at `week` for a base
+function getStreak(base, week){
+  let streak = 0;
+  for(let w = week; w >= 1; w--){
+    const v = state.rpeLog[`${base}_w${w}`];
+    if(v === 'easy') streak++;
+    else break; // heavy or undefined breaks streak
+  }
+  return streak;
+}
+
+// After setting rpe, check if raise should be scheduled
+function checkAndScheduleRaise(base, week){
+  const streak = getStreak(base, week);
+  if(streak >= 2){
+    // Schedule raise for next week if not already scheduled
+    if(!state.pendingRaise[base] || state.pendingRaise[base] > week + 1){
+      state.pendingRaise[base] = week + 1;
+    }
+  }
+}
+
+// At render time: apply any pending raise if current week >= pendingRaise week
+function applyPendingRaises(week){
+  let applied = false;
+  for(const base of ['squat','bench','dl']){
+    if(state.pendingRaise[base] && week >= state.pendingRaise[base]){
+      // Apply raise
+      state.bases[base] += 5;
+      recalcVariants(base);
+      delete state.pendingRaise[base];
+      applied = true;
+      showToast(`↑ ${BASE_NAMES[base]} +5 KG APLICADO`, 'amber');
+    }
+  }
+  if(applied) save();
+}
+
+function recalcVariants(base){
+  const sq=state.bases.squat, bn=state.bases.bench, dl=state.bases.dl;
+  if(base==='squat') state.variants.pauseSquat = pct70(epley(sq,5));
+  if(base==='bench'){
+    const rm=epley(bn,5);
+    state.variants.lightBench=pct70(rm);
+    state.variants.cg=pct70(rm);
+    state.variants.larssen=pct70(rm);
+  }
+  if(base==='dl') state.variants.pauseDL=pct70(epley(dl,5));
+}
+
+// ── GET WEIGHTS FOR WEEK ───────────────────────
+// We need to know what the base was AT that week (before any raises applied after it)
+// Simple approach: bases in state are current. For past weeks, we just show current bases.
+// The pending raise system handles future weeks automatically.
+function buildDays(w){
+  const isDeload = DELOAD_WEEKS.includes(w);
+  const useLarssen = (w%2!==0);
+  const monday = weekMonday(w);
+
+  const sq=state.bases.squat, bn=state.bases.bench, dl=state.bases.dl;
+  const f = isDeload ? 0.75 : 1;
+  function wt(kg){ return Math.round(kg*f/2.5)*2.5 }
+  function dateAt(off){ const d=new Date(monday); d.setDate(d.getDate()+off); return d }
+
+  return [
+    { id:'A', label:'DÍA A', date:dateAt(0), exercises:[
+      {name:'Squat', weight:wt(sq), reps:'5 reps', base:'squat'},
+      {name:'Bench técnico', weight:wt(bn-10), reps:'5 reps', base:null}
+    ]},
+    { id:'B', label:'DÍA B', date:dateAt(1), exercises:[
+      {name:'Deadlift', weight:wt(dl), reps:'5 reps', base:'dl'},
+      {name:'Bench', weight:wt(bn), reps:'5 reps', base:'bench'}
+    ]},
+    { id:'R1', rest:true, date:dateAt(2) },
+    { id:'C', label:'DÍA C', date:dateAt(3), exercises:[
+      {name:'Pause Squat', weight:wt(state.variants.pauseSquat), reps:'8–12 reps', base:null},
+      {name:'Light Bench', weight:wt(state.variants.lightBench), reps:'8–12 reps', base:null}
+    ]},
+    { id:'D', label:'DÍA D', date:dateAt(4), exercises:[
+      {name:'Pause Deadlift', weight:wt(state.variants.pauseDL), reps:'8–12 reps', base:null},
+      {name:useLarssen?'Larssen Press':'Close-grip', weight:wt(useLarssen?state.variants.larssen:state.variants.cg), reps:'8–12 reps', base:null}
+    ]}
+  ];
+}
+
+// ── ACTIONS ────────────────────────────────────
+function toggleExCheck(key){
+  state.checks[key] = !state.checks[key];
+  save(); render();
+  showToast(state.checks[key]?'✓ HECHO':'DESMARCADO', state.checks[key]?'green':'');
+}
+
+function setRPE(base, week, val){
+  const key = `${base}_w${week}`;
+  // Toggle off if same value
+  if(state.rpeLog[key] === val){
+    delete state.rpeLog[key];
+    // Remove pending raise if it was triggered by this
+    if(state.pendingRaise[base] === week+1) delete state.pendingRaise[base];
+    save(); render();
+    return;
+  }
+  state.rpeLog[key] = val;
+  if(val === 'easy'){
+    checkAndScheduleRaise(base, week);
+    const streak = getStreak(base, week);
+    if(streak >= 2){
+      showToast(`↑ ${BASE_NAMES[base]} SUBE SEMANA ${week+1}`, 'amber');
+    } else {
+      showToast('EASY ✓ — 1/2', 'green');
+    }
+  } else {
+    // heavy resets — remove any pending raise for this base
+    delete state.pendingRaise[base];
+    showToast(`HEAVY — CONTADOR RESETEADO`, 'red');
+  }
+  save(); render();
+}
+
+function changeWeek(dir){
+  state.currentWeek = Math.max(1,Math.min(32,state.currentWeek+dir));
+  save(); render();
+}
+
+// ── TOAST ──────────────────────────────────────
+let toastTimer;
+function showToast(msg,cls=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(cls?' '+cls:'');
+  t.offsetHeight;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+// ── RENDER ─────────────────────────────────────
+function render(){
+  const w = state.currentWeek;
+
+  // Apply any pending raises for this week
+  applyPendingRaises(w);
+
+  const isDeload = DELOAD_WEEKS.includes(w);
+  const monday = weekMonday(w);
+  const friday = new Date(monday); friday.setDate(friday.getDate()+4);
+  const isCurrent = isCurrentWeek(w);
+
+  document.getElementById('weekLabel').textContent=`SEM ${w}`;
+  document.getElementById('weekBadge').textContent=`SEMANA ${w}`;
+  document.getElementById('weekDates').textContent=`${fmt(monday)} — ${fmt(friday)} ${friday.getFullYear()}`;
+  document.getElementById('deloadBadge').style.display=isDeload?'block':'none';
+  document.getElementById('currentBadge').style.display=isCurrent?'block':'none';
+
+  const days = buildDays(w);
+  const main = document.getElementById('main');
+  main.innerHTML='';
+
+  if(isDeload){
+    const b=document.createElement('div');
+    b.className='deload-banner';
+    b.innerHTML=`<div class="deload-banner-title">/// SEMANA DE DELOAD ///</div><div class="deload-banner-sub">Pesos al 75% — Recuperación activa</div>`;
+    main.appendChild(b);
+  }
+
+  days.forEach(day=>{
+    const card=document.createElement('div');
+    if(day.rest){
+      card.className='day-card rest-card';
+      card.innerHTML=`<div><div class="rest-slashes">///</div></div><div><div class="rest-label">DESCANSO</div><div class="rest-date">${fmtFull(day.date)}</div></div>`;
+      main.appendChild(card); return;
+    }
+
+    card.className=`day-card${isDeload?' deload-dim':''}`;
+
+    const exHTML = day.exercises.map(ex=>{
+      const checkKey=`ex_w${w}_${day.id}_${ex.name.replace(/\s/g,'_')}`;
+      const checked = !!state.checks[checkKey];
+      const rpeKey = ex.base ? `${ex.base}_w${w}` : null;
+      const rpeVal = rpeKey ? (state.rpeLog[rpeKey]||null) : null;
+      const streak = ex.base ? getStreak(ex.base, w) : 0;
+      const pendingNext = ex.base && state.pendingRaise[ex.base] === w+1;
+
+      let streakHTML='';
+      if(ex.base){
+        const d1 = streak>=1?'filled':'';
+        const d2 = streak>=2?'filled':'';
+        const lbl = pendingNext
+          ? '<span class="streak-label ready">↑ SUBE PRÓXIMA SEMANA</span>'
+          : streak===0
+            ? '<span class="streak-label">0/2 EASY</span>'
+            : `<span class="streak-label">${streak}/2 EASY</span>`;
+        streakHTML=`<div class="streak-row"><div class="streak-dot ${d1}"></div><div class="streak-dot ${d2}"></div>${lbl}</div>`;
+      }
+
+      const rpeHTML = ex.base ? `
+        <div class="ex-btns">
+          <button class="ex-check${checked?' checked':''}" onclick="toggleExCheck('${checkKey}')">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="rpe-btn easy-btn${rpeVal==='easy'?' active':''}" onclick="setRPE('${ex.base}',${w},'easy')">
+            ✓ EASY
+          </button>
+          <button class="rpe-btn heavy-btn${rpeVal==='heavy'?' active':''}" onclick="setRPE('${ex.base}',${w},'heavy')">
+            ✕ HEAVY
+          </button>
+        </div>
+        ${streakHTML}
+      ` : `
+        <div class="ex-btns">
+          <button class="ex-check${checked?' checked':''}" onclick="toggleExCheck('${checkKey}')">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+      `;
+
+      return `
+        <div class="exercise">
+          <div class="ex-top">
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-right"><div class="ex-weight">${ex.weight}</div><div class="ex-unit">kg</div></div>
+          </div>
+          <div class="ex-reps">${ex.reps}</div>
+          ${rpeHTML}
+        </div>
+      `;
+    }).join('');
+
+    card.innerHTML=`
+      <div class="day-header">
+        <div><div class="day-date-label">${fmtFull(day.date)}</div><div class="day-type">${day.label}</div></div>
+      </div>
+      <div class="exercises">${exHTML}</div>
+    `;
+    main.appendChild(card);
+  });
+
+  // 1RM grid
+  const sq=state.bases.squat, bn=state.bases.bench, dl=state.bases.dl;
+  const bases=[
+    {name:'Squat',base:'squat',val:sq},
+    {name:'Bench',base:'bench',val:bn},
+    {name:'Deadlift',base:'dl',val:dl}
+  ];
+  document.getElementById('rmGrid').innerHTML=bases.map(b=>{
+    const streak=getStreak(b.base,w);
+    const pending=state.pendingRaise[b.base];
+    const streakInfo = pending
+      ? `<div class="rm-streak">↑ SEM ${pending}</div>`
+      : streak>0
+        ? `<div class="rm-streak">${streak}/2 ●</div>`
+        : '';
+    return `<div class="rm-card">
+      <div class="rm-name">${b.name}</div>
+      <div class="rm-val">${epley(b.val,5)}<span style="font-size:11px;color:var(--gray)"> kg</span></div>
+      <div class="rm-sub">Base ${b.val} kg</div>
+      ${streakInfo}
+    </div>`;
+  }).join('');
+}
+
+
+// ── BACKUP / RESTORE ───────────────────────────
+function openSettings(){ document.getElementById('settingsOverlay').classList.add('open') }
+function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('open') }
+
+function exportBackup(){
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const now = new Date();
+  const ds = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `ironlog_backup_${ds}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  closeSettings();
+  showToast('BACKUP EXPORTADO', 'green');
+}
+
+function importBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if(!imported.bases || !imported.variants || !imported.checks){
+        showToast('ARCHIVO INVALIDO', 'red'); return;
+      }
+      state = imported;
+      save();
+      closeSettings();
+      render();
+      showToast('BACKUP RESTAURADO', 'green');
+    } catch(err) {
+      showToast('ERROR AL IMPORTAR', 'red');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+document.getElementById('settingsOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeSettings();
+});
+
+render();
+</script>
+</body>
+</html>
